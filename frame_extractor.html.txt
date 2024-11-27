@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>動画フレーム抽出ツール</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        video {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .frames img {
+            margin: 5px;
+            width: 150px;
+            height: auto;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>動画フレーム抽出ツール</h1>
+    <p>動画を選択して「フレームを抽出」ボタンを押してください。</p>
+    <input type="file" id="videoUploader" accept="video/*">
+    <video id="videoPlayer" controls></video>
+    <button id="extractButton" disabled>フレームを抽出 (20枚)</button>
+    <div class="frames" id="framesContainer"></div>
+    <script>
+        const videoUploader = document.getElementById('videoUploader');
+        const videoPlayer = document.getElementById('videoPlayer');
+        const extractButton = document.getElementById('extractButton');
+        const framesContainer = document.getElementById('framesContainer');
+        let videoDuration = 0;
+
+        videoUploader.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                videoPlayer.src = url;
+                extractButton.disabled = true;
+
+                videoPlayer.addEventListener('loadedmetadata', function() {
+                    videoDuration = videoPlayer.duration;
+                    extractButton.disabled = false;
+                }, { once: true });
+            }
+        });
+
+        extractButton.addEventListener('click', function() {
+            framesContainer.innerHTML = '';
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            const frameCount = 20;
+            const interval = videoDuration / frameCount;
+            let currentTime = 0;
+            let framesExtracted = 0;
+
+            canvas.width = 705;
+            canvas.height = 397;
+
+            function captureFrame() {
+                videoPlayer.currentTime = currentTime;
+            }
+
+            videoPlayer.addEventListener('seeked', function capture() {
+                context.drawImage(videoPlayer, 0, 0, canvas.width, canvas.height);
+                const img = document.createElement('img');
+                img.src = canvas.toDataURL('image/jpeg');
+                framesContainer.appendChild(img);
+
+                framesExtracted++;
+                if (framesExtracted < frameCount) {
+                    currentTime += interval;
+                    captureFrame();
+                } else {
+                    videoPlayer.removeEventListener('seeked', capture);
+                    alert('フレーム抽出が完了しました！');
+                }
+            });
+
+            captureFrame();
+        });
+    </script>
+</body>
+</html>
